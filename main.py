@@ -1,10 +1,36 @@
-# bank-python-app - первая версия
-print("🏦 Добро пожаловать в банк 'Ученик'!")
+# bank-python-app - версия 2
+print("🏦 Банк 'Ученик'")
 
-name = input("Как вас зовут? ")
-year = int(input("В каком году вы родились? "))
+balance = 5000  # начальный баланс
 
-age = 2026 - year
+while True:
+    print("\n1 - Проверить баланс")
+    print("2 - Пополнить счет")
+    print("3 - Снять деньги")
+    print("4 - Выйти")
 
-print(f"Привет, {name}! Вам {age} лет.")
-print("Рады видеть вас в нашем банке!")
+    choice = input("Ваш выбор: ")
+
+    if choice == "1":
+        print(f"💰 Ваш баланс: {balance} руб.")
+    elif choice == "2":
+        amount = int(input("Сколько внести? "))
+        if amount <= 0:
+            print("❌ Сумма должна быть положительной!")
+        else:
+            balance += amount
+            print(f"✅ Счет пополнен. Новый баланс: {balance} руб.")
+    elif choice == "3":
+        amount = int(input("Сколько снять? "))
+        if amount <= 0:
+            print("❌ Сумма должна быть положительной!")
+        elif amount > balance:
+            print("❌ Недостаточно средств!")
+        else:
+            balance = balance - amount
+            print(f"✅ Снято {amount} руб. Новый баланс: {balance} руб.")
+    elif choice == "4":
+        print("👋 До свидания!")
+        break
+    else:
+        print("❌ Неверный выбор. Попробуйте снова.")
