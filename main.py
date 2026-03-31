@@ -1,36 +1,56 @@
-# bank-python-app - версия 2
-print("🏦 Банк 'Ученик'")
+# bank-python-app - версия 3 (с функциями)
+def show_balance(balance):
+    """Показывает баланс"""
+    print(f"💰 Ваш баланс: {balance} руб.")
 
-balance = 5000  # начальный баланс
+def deposit(balance):
+    """Пополнение счёта"""
+    amount = int(input("Сумма пополнения: "))
+    if amount <= 0:
+        print("❌ Сумма должна быть положительной!")
+        return balance
+    new_balance = balance + amount
+    print(f"✅ Счёт пополнен на {amount} руб.")
+    return new_balance
 
-while True:
-    print("\n1 - Проверить баланс")
-    print("2 - Пополнить счет")
-    print("3 - Снять деньги")
-    print("4 - Выйти")
+def withdraw(balance):
+    """Снятие денег"""
+    amount = int(input("Сумма снятия: "))
+    if amount <= 0:
+        print("❌ Сумма должна быть положительной!")
+        return balance
+    if amount > balance:
+        print("❌ Недостаточно средств!")
+        return balance
+    new_balance = balance - amount
+    print(f"✅ Снято {amount} руб.")
+    return new_balance
 
-    choice = input("Ваш выбор: ")
+def main():
+    """Главная функция программы"""
+    print("🏦 Банк 'Ученик'")
 
-    if choice == "1":
-        print(f"💰 Ваш баланс: {balance} руб.")
-    elif choice == "2":
-        amount = int(input("Сколько внести? "))
-        if amount <= 0:
-            print("❌ Сумма должна быть положительной!")
+    balance = 5000
+
+    while True:
+        print("\n1 - Баланс")
+        print("2 - Пополнить")
+        print("3 - Снять")
+        print("4 - Выход")
+
+        choice = input("Выберите действие: ")
+
+        if choice == "1":
+            show_balance(balance)
+        elif choice == "2":
+            balance = deposit(balance)
+        elif choice == "3":
+            balance = withdraw(balance)
+        elif choice == "4":
+            print("👋 До свидания!")
+            break
         else:
-            balance += amount
-            print(f"✅ Счет пополнен. Новый баланс: {balance} руб.")
-    elif choice == "3":
-        amount = int(input("Сколько снять? "))
-        if amount <= 0:
-            print("❌ Сумма должна быть положительной!")
-        elif amount > balance:
-            print("❌ Недостаточно средств!")
-        else:
-            balance = balance - amount
-            print(f"✅ Снято {amount} руб. Новый баланс: {balance} руб.")
-    elif choice == "4":
-        print("👋 До свидания!")
-        break
-    else:
-        print("❌ Неверный выбор. Попробуйте снова.")
+            print("❌ Неверный выбор!")
+
+if __name__ == "__main__":
+    main()
