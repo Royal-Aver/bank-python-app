@@ -1,59 +1,98 @@
-# bank-python-app - версия 5 (с переводами)
+# bank-python-app - версия 6 (с историей операций)
 
-def show_balance(balance):
-    print(f"💰 Ваш баланс: {balance:.2f} руб.")
+from datetime import datetime
 
-def deposit(balance):
+def get_timestamp():
+    """Возвращает текущую дату и время в формате ДД.ММ.ГГГГ ЧЧ:ММ:СС"""
+    return datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+
+def add_to_history(user_data, operation, amount, recipient=None):
+    """Добавляет запись в историю пользователя"""
+    time_str = get_timestamp()
+
+    if recipient:
+        record = f"[{time_str}] {operation}: {amount} руб. → {recipient}"
+    else:
+        record = f"[{time_str}] {operation}: {amount} руб."
+
+    user_data["history"].append(record)
+
+def show_balance(user_data):
+    print(f"💰 Ваш баланс: {user_data['balance']:.2f} руб.")
+
+def deposit(user_data):
     amount = int(input("Сумма пополнения: "))
     if amount <= 0:
         print("❌ Сумма должна быть положительной!")
-        return balance
-    balance += amount
-    print(f"✅ Счёт пополнен на {amount} руб.")
-    return balance
+        return user_data
 
-def withdraw(balance):
+    user_data["balance"] += amount
+    add_to_history(user_data, "ПОПОЛНЕНИЕ", amount)
+    print(f"✅ Счёт пополнен на {amount} руб.")
+    return user_data
+
+def withdraw(user_data):
     amount = int(input("Сумма снятия: "))
     if amount <= 0:
         print("❌ Сумма должна быть положительной!")
-        return balance
-    if amount > balance:
+        return user_data
+    if amount > user_data["balance"]:
         print("❌ Недостаточно средств!")
-        return balance
-    balance -= amount
-    print(f"✅ Снято {amount} руб.")
-    return balance
+        return user_data
 
-def transfer(sender_balance, users, sender_name):
+    user_data["balance"] -= amount
+    add_to_history(user_data, "СНЯТИЕ", amount)
+    print(f"✅ Снято {amount} руб.")
+    return user_data
+
+def transfer(user_data, users, sender_name):
     """Перевод денег другому пользователю"""
     recipient = input("👤 Введите логин получателя: ")
 
     if recipient == sender_name:
         print("❌ Нельзя перевести самому себе!")
-        return sender_balance, users
+        return user_data, users
 
     if recipient not in users:
         print("❌ Пользователь не найден!")
-        return sender_balance, users
+        return user_data, users
 
     amount = int(input("💰 Сумма перевода: "))
 
     if amount <= 0:
         print("❌ Сумма должна быть положительной!")
-        return sender_balance, users
+        return user_data, users
 
-    if amount > sender_balance:
+    if amount > user_data["balance"]:
         print("❌ Недостаточно средств!")
-        return sender_balance, users
+        return user_data, users
 
     # Выполняем перевод
-    sender_balance -= amount
-    users[recipient] += amount
+    user_data["balance"] -= amount
+    users[recipient]["balance"] += amount
+
+    # Добавляем в историю обоим пользователям
+    add_to_history(user_data, "ПЕРЕВОД", amount, recipient)
+    add_to_history(users[recipient], "ПОЛУЧЕНИЕ", amount, sender_name)
 
     print(f"✅ Переведено {amount} руб. пользователю {recipient}")
-    return sender_balance, users
+    return user_data, users
 
-def bank_menu(username, balance, users):
+def show_history(user_data):
+    """Показывает историю операций пользователя"""
+    history = user_data.get("history", [])
+
+    if not history:
+        print("📭 История пуста")
+        return
+
+    print("\n📜 ИСТОРИЯ ОПЕРАЦИЙ:")
+    print("-" * 50)
+    for record in history:
+        print(record)
+    print("-" * 50)
+
+def bank_menu(username, user_data, users):
     """Меню банковских операций"""
     bonus_balance = 0
 
@@ -63,33 +102,37 @@ def bank_menu(username, balance, users):
         print("2 - Пополнить")
         print("3 - Снять")
         print("4 - Перевести")
-        print("5 - Бонусы")
-        print("6 - Выйти из аккаунта")
+        print("5 - История операций")
+        print("6 - Бонусы")
+        print("7 - Выйти из аккаунта")
 
         choice = input("Выберите действие: ")
 
         if choice == "1":
-            print(f"💰 Основной баланс: {balance:.2f} руб.")
+            show_balance(user_data)
             print(f"🎁 Бонусный счёт: {bonus_balance:.2f} руб.")
         elif choice == "2":
-            balance = deposit(balance)
+            user_data = deposit(user_data)
         elif choice == "3":
-            balance = withdraw(balance)
+            user_data = withdraw(user_data)
         elif choice == "4":
-            balance, users = transfer(balance, users, username)
+            user_data, users = transfer(user_data, users, username)
         elif choice == "5":
+            show_history(user_data)
+        elif choice == "6":
             if bonus_balance <= 0:
                 print("🎁 У вас нет бонусов!")
                 continue
             print(f"🎁 У вас {bonus_balance:.2f} бонусных рублей.")
             use = input("Использовать бонусы? (да/нет): ")
             if use.lower() == "да":
-                balance += bonus_balance
-                print(f"✅ Бонусы зачислены! Новый баланс: {balance:.2f} руб.")
+                user_data["balance"] += bonus_balance
+                add_to_history(user_data, "БОНУСЫ", bonus_balance)
+                print(f"✅ Бонусы зачислены! Новый баланс: {user_data['balance']:.2f} руб.")
                 bonus_balance = 0
-        elif choice == "6":
+        elif choice == "7":
             print(f"👋 До свидания, {username}!")
-            return balance, users
+            return user_data, users
         else:
             print("❌ Неверный выбор!")
 
@@ -107,12 +150,25 @@ def register(users):
     if login in users:
         print("❌ Такой логин уже существует!")
         return users
-    users[login] = 0
+
+    users[login] = {
+        "balance": 0,
+        "history": []
+    }
     print(f"✅ Пользователь {login} создан!")
     return users
 
 def main():
-    users = {"admin": 10000}
+    users = {
+        "admin": {
+            "balance": 10000,
+            "history": [f"[{get_timestamp()}] СИСТЕМА: аккаунт создан"]
+        },
+        "Fedia": {
+            "balance": 1000,
+            "history": [f"[{get_timestamp()}] СИСТЕМА: аккаунт создан"]
+        }
+    }
 
     while True:
         print("\n🏦 Банк 'Ученик'")
@@ -123,11 +179,11 @@ def main():
         choice = input("Выберите действие: ")
 
         if choice == "1":
-            username, balance = login(users)
+            username, user_data = login(users)
             if username:
-                new_balance, updated_users = bank_menu(username, balance, users)
+                updated_user, updated_users = bank_menu(username, user_data, users)
+                users[username] = updated_user
                 users = updated_users
-                users[username] = new_balance
         elif choice == "2":
             users = register(users)
         elif choice == "3":
