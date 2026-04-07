@@ -1,21 +1,43 @@
-# bank-python-app - версия 6 (с историей операций)
+# bank-python-app - версия 7 (с валидацией данных)
 
+import re
 from datetime import datetime
 
 def get_timestamp():
-    """Возвращает текущую дату и время в формате ДД.ММ.ГГГГ ЧЧ:ММ:СС"""
     return datetime.now().strftime("%d.%m.%Y %H:%M:%S")
 
 def add_to_history(user_data, operation, amount, recipient=None):
-    """Добавляет запись в историю пользователя"""
     time_str = get_timestamp()
-
     if recipient:
         record = f"[{time_str}] {operation}: {amount} руб. → {recipient}"
     else:
         record = f"[{time_str}] {operation}: {amount} руб."
-
     user_data["history"].append(record)
+
+# ========== ФУНКЦИИ ПРОВЕРКИ ==========
+
+def check_email(email):
+    """Проверяет корректность email"""
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    return bool(re.match(pattern, email))
+
+def check_phone(phone):
+    """Проверяет номер телефона (+7XXXXXXXXXX)"""
+    cleaned = re.sub(r'[\s\-\(\)]', '', phone)
+    pattern = r"^\+7\d{10}$"
+    return bool(re.match(pattern, cleaned))
+
+def check_password(password):
+    """Проверяет надёжность пароля"""
+    if len(password) < 8:
+        return False
+    if not re.search(r'\d', password):
+        return False
+    if not re.search(r'[A-Z]', password):
+        return False
+    return True
+
+# ========== ОСТАЛЬНЫЕ ФУНКЦИИ ==========
 
 def show_balance(user_data):
     print(f"💰 Ваш баланс: {user_data['balance']:.2f} руб.")
@@ -25,7 +47,6 @@ def deposit(user_data):
     if amount <= 0:
         print("❌ Сумма должна быть положительной!")
         return user_data
-
     user_data["balance"] += amount
     add_to_history(user_data, "ПОПОЛНЕНИЕ", amount)
     print(f"✅ Счёт пополнен на {amount} руб.")
@@ -39,14 +60,12 @@ def withdraw(user_data):
     if amount > user_data["balance"]:
         print("❌ Недостаточно средств!")
         return user_data
-
     user_data["balance"] -= amount
     add_to_history(user_data, "СНЯТИЕ", amount)
     print(f"✅ Снято {amount} руб.")
     return user_data
 
 def transfer(user_data, users, sender_name):
-    """Перевод денег другому пользователю"""
     recipient = input("👤 Введите логин получателя: ")
 
     if recipient == sender_name:
@@ -67,11 +86,9 @@ def transfer(user_data, users, sender_name):
         print("❌ Недостаточно средств!")
         return user_data, users
 
-    # Выполняем перевод
     user_data["balance"] -= amount
     users[recipient]["balance"] += amount
 
-    # Добавляем в историю обоим пользователям
     add_to_history(user_data, "ПЕРЕВОД", amount, recipient)
     add_to_history(users[recipient], "ПОЛУЧЕНИЕ", amount, sender_name)
 
@@ -79,21 +96,17 @@ def transfer(user_data, users, sender_name):
     return user_data, users
 
 def show_history(user_data):
-    """Показывает историю операций пользователя"""
     history = user_data.get("history", [])
-
     if not history:
         print("📭 История пуста")
         return
-
     print("\n📜 ИСТОРИЯ ОПЕРАЦИЙ:")
     print("-" * 50)
-    for record in history:
+    for record in history[-10:]:  # последние 10
         print(record)
     print("-" * 50)
 
 def bank_menu(username, user_data, users):
-    """Меню банковских операций"""
     bonus_balance = 0
 
     while True:
@@ -146,27 +159,64 @@ def login(users):
         return None, None
 
 def register(users):
-    login = input("📝 Придумайте логин: ")
+    print("\n📝 РЕГИСТРАЦИЯ НОВОГО ПОЛЬЗОВАТЕЛЯ")
+
+    login = input("Придумайте логин: ")
     if login in users:
         print("❌ Такой логин уже существует!")
         return users
 
+    # Проверка email
+    while True:
+        email = input("Введите email: ")
+        if check_email(email):
+            break
+        print("❌ Неверный email! Пример: user@mail.com")
+
+    # Проверка телефона
+    while True:
+        phone = input("Введите телефон (+7 123 456-78-90): ")
+        if check_phone(phone):
+            break
+        print("❌ Неверный телефон! Пример: +7 999 123-45-67")
+
+    # Проверка пароля
+    while True:
+        password = input("Придумайте пароль (мин. 8 символов, цифра, заглавная буква): ")
+        if check_password(password):
+            break
+        print("❌ Слабый пароль! Используйте 8+ символов, цифру и заглавную букву")
+
+    # Создаём пользователя
     users[login] = {
         "balance": 0,
-        "history": []
+        "history": [f"[{get_timestamp()}] СИСТЕМА: аккаунт создан"],
+        "email": email,
+        "phone": phone
     }
-    print(f"✅ Пользователь {login} создан!")
+
+    print(f"\n✅ Пользователь {login} создан!")
+    print(f"📧 Email: {email}")
+    print(f"📱 Телефон: {phone}")
     return users
+
+def show_account_info(user_data):
+    """Показывает информацию об аккаунте"""
+    print("\n📋 ИНФОРМАЦИЯ ОБ АККАУНТЕ:")
+    print("-" * 30)
+    print(f"💰 Баланс: {user_data['balance']:.2f} руб.")
+    print(f"📧 Email: {user_data.get('email', 'не указан')}")
+    print(f"📱 Телефон: {user_data.get('phone', 'не указан')}")
+    print(f"📊 Всего операций: {len(user_data.get('history', []))}")
+    print("-" * 30)
 
 def main():
     users = {
         "admin": {
             "balance": 10000,
-            "history": [f"[{get_timestamp()}] СИСТЕМА: аккаунт создан"]
-        },
-        "Fedia": {
-            "balance": 1000,
-            "history": [f"[{get_timestamp()}] СИСТЕМА: аккаунт создан"]
+            "history": [f"[{get_timestamp()}] СИСТЕМА: аккаунт создан"],
+            "email": "admin@bank.com",
+            "phone": "+7 999 123-45-67"
         }
     }
 
