@@ -1,0 +1,12 @@
+# .dockerignore — файлы, которые НЕ будут отправляться в Docker при сборке
+
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.env
+.vscode/
+.idea/
+*.md
+.DS_Store

@@ -1,0 +1,12 @@
+services:
+  bank_app:
+    build: .
+    image: my-bank-app
+    container_name: bank_app_dev
+    volumes:
+      - .:/app
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+    # network_mode: host
